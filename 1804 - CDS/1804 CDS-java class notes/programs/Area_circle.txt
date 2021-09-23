@@ -1,0 +1,10 @@
+import java.util.Scanner
+class Area_circle{
+public static void main(String args[]){
+	Scanner s = new Scanner(System.in);
+	System.out.println("Enter radius:");
+	double r = s.nextDouble();
+	double area = 22*r*r/7;
+	System.out.println("area:" area);
+}
+}
