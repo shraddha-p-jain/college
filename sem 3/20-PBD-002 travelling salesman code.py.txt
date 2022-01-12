@@ -1,0 +1,299 @@
+﻿# Shraddha P Jain
+# 20-PBD-002
+# Travelling salesman problem using genetic algorithm
+#Population Size = 10
+#Max Generations = 20
+#Using Permutation Encoding to represent chromosome solution
+#Each Chromosome defined as = ( order of cities ) = ( city1, city2, ...., cityi, ...., cityN)
+#Total cities = 5
+#Total Genes = 5
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+%matplotlib inline
+from tqdm.notebook import tqdm as tqdm
+from statistics import mean
+import time
+from ttictoc import tic,toc
+# TSP Parameter Contraints
+tot_cities=5
+
+distMatrix = np.array([
+                [0,5,2,5,8],
+                [5,0,4,3,7],
+                [2,4,0,6,3],
+                [5,3,6,0,9],
+                [8,7,3,9,0]])
+
+# GA Parameters
+pop_size = 10    # total Chromosomes/ possible solution in each generation
+tot_genes = tot_cities    # total genes/params in each chromosome
+
+elitepop_ctr = int(0.1*pop_size)
+if pop_size - elitepop_ctr %2!=0:
+    elitepop_ctr+=1
+
+maxGen=30
+ProbOfCross=0.8
+ProbOfMut=0.1
+
+# Encapsulating all Chromosome Initialization and defining
+# Create a possible tour of cities randomly
+# Calculate corresponding tour cost
+class chromosome:
+
+    def init_chromosome(self):
+        self.chromo_str = np.random.permutation(range(1,tot_cities+1)).tolist()
+        self.tot_genes=5        
+
+    def set_chromosome(self,chromo_str):
+        self.chromo_str = chromo_str
+
+    def cal_tour_cost(self):
+        cost=0
+        for i in range(0,tot_cities-1):
+            cost+=distMatrix[self.chromo_str[i]-1,self.chromo_str[i+1]-1]
+        cost+=distMatrix[self.chromo_str[tot_cities-1]-1,self.chromo_str[0]-1]
+        self.tour_cost=cost
+
+    def __init__(self,chromo_str=None):
+        if chromo_str is None:
+            self.init_chromosome()
+        else:
+            self.set_chromosome(chromo_str)
+        self.cal_tour_cost()
+
+tic()
+chromo1=chromosome()
+print(toc())
+print(chromo1.chromo_str)
+chromo1.tour_cost
+
+def davidCrossover(p1,p2):
+    #p1 p2 being permutation encoded strings / sequence 
+    point1=np.random.randint(0,tot_genes-1)
+    jump=np.random.randint(1,tot_genes-point1)
+    point2=point1+jump
+
+    off1=p1[point1:point2+1]
+    off2=p2[point1:point2+1]
+
+    p1_i=point2+1
+    p2_i=point2+1
+    k1=0
+    k2=0
+    kmax=tot_genes - (point2-point1+1)    
+    while k1<kmax or k2<kmax:
+
+        if p1_i % tot_genes == 0:
+            p1_i=0
+        if p2_i % tot_genes == 0:
+            p2_i=0
+
+        if p2[p2_i] not in off1:
+            off1.append(p2[p2_i])
+            k1+=1
+
+        if p1[p1_i] not in off2:
+            off2.append(p1[p1_i])
+            k2+=1
+        
+        p1_i+=1
+        p2_i+=1
+    
+    off1=off1[-point1:]+off1[0:-point1]
+    off2=off2[-point1:]+off2[0:-point1]
+
+    off1=chromosome(off1)
+    off2=chromosome(off2)
+    
+    return off1,off2
+
+def scrambleMutation(chromo_str):   
+    # chromo_str being permutation encoded string / sequence 
+    point1=np.random.randint(0,tot_genes-1)
+    jump=np.random.randint(1,tot_genes-point1)
+    point2=point1+jump
+
+    scramble_str = np.random.permutation(chromo_str[point1:point2+1]).tolist()
+    mut_chromo_str = chromo_str[0:point1] + scramble_str + chromo_str[point2+1:]
+    
+    return chromosome(mut_chromo_str)
+
+# Encapsulating all Generation Operations to create Next Gen
+# Sets initial Gen, and declares metric storing variabls
+# Logs generation Tour Cost and Calculates fitness
+# Gets the best Elite population to forward to the next Gen
+# The remaining Gen is selected by choosing parents by random Roulette selection method 
+# Applying Crossover and Mutation as per Probability of Crossover and Mutation to produce offsprings
+class Generation:
+
+    def __init__(self,curGen):
+        self.curGen=curGen
+        self.nextGen=[None]*pop_size
+        self.gen_cost=np.empty(pop_size)
+        self.gen_fitness=np.empty(pop_size)
+        self.costLines = {'max':[],'min':[],'mean':[]}
+        self.FitnessLines = {'max':[],'min':[],'mean':[]}
+        
+    def getCurGen(self):
+        return self.curGen
+
+    def printCurGen(self):
+        print(self.curGen)
+
+    def get_Gen_Cost(self):
+        self.gen_cost = np.array([self.curGen[x].tour_cost for x in range(pop_size)])
+        
+    def get_elite_pop(self):
+        elitePop_index = np.argsort(self.gen_cost)[0:elitepop_ctr]
+        elitePop = np.array(self.curGen)[elitePop_index.astype('int')]
+        return elitePop
+
+    def get_fitness(self):
+        invertedCosts = 1/self.gen_cost
+        sum = np.sum(invertedCosts)
+        self.gen_fitness = (invertedCosts/sum)*100 
+        self.cum_gen_fitness = np.cumsum(self.gen_fitness)
+
+    def roulette_wheel(self):
+        
+        val = np.random.rand()*100 
+        p1=np.digitize(val,self.cum_gen_fitness,right=True)
+
+        while True:
+            val = np.random.rand()*100 
+            p2=np.digitize(val,self.cum_gen_fitness,right=True)
+
+            if p2!=p1:
+                break
+
+        return (p1,p2)
+
+    def logMetrics(self):
+        self.costLines['max'].append(max(self.gen_cost))
+        self.costLines['min'].append(min(self.gen_cost))
+        self.costLines['mean'].append(mean(self.gen_cost))
+
+        self.FitnessLines['max'].append(max(self.gen_fitness))
+        self.FitnessLines['min'].append(min(self.gen_fitness))
+        self.FitnessLines['mean'].append(mean(self.gen_fitness))
+        
+    def createNextGen(self):
+        self.get_Gen_Cost()
+        self.get_fitness()
+        self.logMetrics()
+
+        nextGen=[None]*pop_size
+        nextGen[0:elitepop_ctr] = self.get_elite_pop()
+        
+        mutFlag1=(np.random.rand(pop_size) < ProbOfMut)
+        mutFlag2=(np.random.rand(pop_size) < ProbOfMut)
+        crossFlag=(np.random.rand(pop_size) < ProbOfCross)
+
+        i=elitepop_ctr
+        while i<pop_size:
+            p1,p2 = self.roulette_wheel()
+            p1_chromo=self.curGen[p1]
+            p2_chromo=self.curGen[p2]    
+            
+            nextGen[i]=p1_chromo
+            nextGen[i+1]=p2_chromo   
+            
+            if crossFlag[i]:            
+                off1,off2 = davidCrossover(p1_chromo.chromo_str,p2_chromo.chromo_str)
+                nextGen[i]=off1
+                nextGen[i+1]=off2
+            if mutFlag1[i]: 
+                nextGen[i]=scrambleMutation(nextGen[i].chromo_str)
+            if mutFlag2[i]: 
+                nextGen[i+1]=scrambleMutation(nextGen[i+1].chromo_str)
+            
+            #print("%d Done!"%(i+1))
+            i+=2
+            
+        self.curGen = nextGen
+
+curGen=[None]*pop_size
+print("\n No.:     Tour Order    ->  Tour Cost ")
+for i in tqdm(range(pop_size),"Chromosomes generated"):
+    chromo=chromosome()
+    curGen[i]=chromo
+    print("\n  %d : "%(i+1),chromo.chromo_str," -> ",chromo.tour_cost)
+    
+
+Gen=Generation(curGen)
+for i in tqdm(range(30),"Generations Completed"):
+    #print("\n  Creating Next Gen %d:\n"%(i+1))
+    Gen.createNextGen()
+
+
+def plot_Metrics(i,metricDict,metricName,maxGen,xStep,yStep):
+    
+    plt.figure(i)
+    
+    xMaxVal=maxGen+1
+    yMaxVal=max(metricDict['max'])+1
+    
+    plt.xlim(0,xMaxVal)
+    plt.ylim(0,yMaxVal)
+    
+    plt.xticks(np.arange(0,xMaxVal,xStep))
+    plt.yticks(np.arange(0,yMaxVal,yStep))
+    
+    plt.xlabel("Generation No.")
+    plt.ylabel(metricName)
+    plt.title("Tour %s vs Generation"%(metricName))
+    
+    maxColor="red"
+    minColor="green"
+    meanColor="blue"
+    
+    m1,=plt.plot(metricDict['max'],color=maxColor)
+    m2,=plt.plot(metricDict['min'],color=minColor)
+    m3,=plt.plot(metricDict['mean'],color=meanColor)
+    
+    plt.legend([m1,m2,m3],["Max "+metricName,"Min "+metricName,"Average "+metricName],loc="upper right")
+    
+    return
+
+
+xStep=1
+plot_Metrics(0,Gen.costLines,"Cost",maxGen,xStep,1)
+plot_Metrics(1,Gen.FitnessLines,"Fitness",maxGen,xStep,1)
+
+plt.show()
+
+print("Gen Chromo Params")
+print("\n No.:     Tour Order    ->  Tour Cost ")
+for i in range(pop_size):
+    print("\n  %d : "%(i+1),Gen.curGen[i].chromo_str," -> ",Gen.curGen[i].tour_cost)
+
+# Last Run Best Solution 
+# Min Cost :  15
+# Possible Min Cost Tour :  [3, 2, 1, 4, 5]
+
+print("\n Min Cost : ",Gen.curGen[0].tour_cost)
+print("\n Possible Min Cost Tour : ", Gen.curGen[0].chromo_str)
+
+from sympy.utilities.iterables import multiset_permutations
+
+cities = np.array(range(1,tot_cities+1))
+
+print("\n No.:     Tour Order    ->  Tour Cost ")
+
+i=0
+min_cost = 100000
+min_cost_tour = 100000
+for tour in multiset_permutations(cities):
+    chromo=chromosome(tour)
+    print("\n  %d : "%(i+1),chromo.chromo_str," -> ",chromo.tour_cost)
+    if chromo.tour_cost < min_cost:
+        min_cost=chromo.tour_cost
+        min_cost_tour=chromo.chromo_str
+    i+=1
+
+print("\n Min Cost : ",min_cost)
+print("\n Possible Min Cost Tour : ", min_cost_tour)
+

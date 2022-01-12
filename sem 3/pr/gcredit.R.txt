@@ -1,0 +1,107 @@
+gcredit<-read.csv(file.choose())
+View(gcredit)
+str(gcredit)
+levels(gcredit$Balance.in.Savings.A.C)
+gcredit$Balance.in.Savings.A.C<-as.factor(gcredit$Balance.in.Savings.A.C)
+levels(gcredit$Balance.in.Savings.A.C)
+sum(is.na(gcredit))
+# calculate proportion of good and bad credits
+tab1<-table(gcredit$Credit.Rating)
+prop.table(tab1)
+cnts<-table(gcredit$Credit.Rating,gcredit$Balance.in.Savings.A.C,dnn=c("Credit","Balance"))
+cnts
+cnts1<-table(gcredit$Credit.Rating,gcredit$Other.installment,dnn=c("Credit","Other Installment"))
+cnts1
+sumtable<-addmargins(cnts1,FUN=sum)
+sumtable
+#create a table of proportions over rows
+row.margin<-round(prop.table(cnts1,margin=1),4)*100
+row.margin
+#create a table of proportions over columns
+col.margin<-round(prop.table(cnts1,margin=2),4)*100
+col.margin
+
+vif(lm(gcredit$Duration ~  gcredit$Credit.Amount + gcredit$Install_rate
+       +gcredit$Present.Resident+gcredit$Age+gcredit$Num_Credits,data=gcredit))
+
+#Example dichotomous predictor
+lr1<-glm(Credit.Rating ~ Other.installment  ,data =gcredit, family = "binomial", maxit =500)
+summary(lr1)
+#The variable Other Installment is insignificant variable. The model cannot be built here with only this variable.
+#(f)Example polychotomous predictor
+
+levels(gcredit$Balance.in.Savings.A.C)[c(1,4,5)]<-"Below1000DM"
+levels(gcredit$Balance.in.Savings.A.C)
+lr2<-glm (gcredit$Credit.Rating ~ gcredit$Balance.in.Savings.A.C ,data=gcredit, family ="binomial")
+summary(lr2)
+#The variable Balance in Savings account is a significant predictor
+#The estimated model is exp(logit)/(1+exp(logit))
+#where logit is Credit scoring (y=1)= -0.71024-1.08152(gcredit$Balance.in.Savings.A.C over1000DM)-0.60706(gcredit$Balance.in.Savings.A.C unknown)
+#Model building
+lr3<-glm (gcredit$Credit.Rating ~ gcredit$Duration +gcredit$Credit.Amount + gcredit$Install_rate
+          +gcredit$Present.Resident+gcredit$Age+gcredit$Num_Credits,data=gcredit, family ="binomial")
+summary(lr3)
+#before commenting abount individial variable significance, let us check the overall model significance.
+#H0: the coefficients are zero in population
+#H1: Atlease one is non-zero
+1-pchisq(975.68-923.61, df=(799-793))
+#since p-value is less than 0.05,we reject Ho and the model is significat.
+#From lr3, the variable Num_Credits is highly insignificant and hence can be removed.
+#In the presence of other variable, Num_Credits is not explaining more.
+lr4<-glm (gcredit$Credit.Rating ~ gcredit$Duration +gcredit$Credit.Amount + gcredit$Install_rate
+          +gcredit$Present.Resident+gcredit$Age,data=gcredit, family ="binomial")
+summary(lr4)
+#In the presence of other variables, present resident is not explaining more.
+lr5<-glm (gcredit$Credit.Rating ~ gcredit$Duration +gcredit$Credit.Amount + gcredit$Install_rate
+          +gcredit$Age,data=gcredit, family ="binomial")
+summary(lr5)
+#the variable Credit.Amount is not significant at 5% level of significance.
+#But the question (part h) includes the variable and hence keeping it for the time being
+#The logit is Credit scoring (y=1)= -1.603e+00 + 2.441e-02(Duration)+ 7.655e-05  (Credit.Amount  )+ 2.502e-01(Install_rate) -2.262e-02(Age)
+
+#Model=exp(logit)/(1+exp(logit))
+#What is the probability of credit score of a random applicant if he has 32 years of age, 36 months of credit duration, Rs.2500 credit amount and an instalment rate 2? What would be your suggestion about the credit score based on this probability?    
+#g^(y=1) = -1.603e+00 + 2.441e-02(36)+ 7.655e-05  (2500  )+ 2.502e-01(2)-2.262e-02(32)
+#= -1.603e+00 + 36.330+128.9475+1.8409-9.7961
+#=167.1184-11.3991
+#=155.7193
+#pihat(1)= exp(155.7193)/(1+exp(155.7193))
+z1<-exp(155.7193)
+z1
+z2<-1+ exp(155.7193)
+z1/z2
+
+###########CART###########
+#standardize the numerical variables
+Duration.z<-((gcredit$Duration-mean(gcredit$Duration))/sd(gcredit$Duration))
+Credit.Amount.z<-(gcredit$Credit.Amount-mean(gcredit$Credit.Amount))/sd(gcredit$Credit.Amount)
+#Age.z<-((gcredit$Age-mean(gcredit$Age))/sd(gcredit$Age))
+Age1.z<-((gcredit$Age-mean(gcredit$Age))/sd(gcredit$Age))
+
+library(rpart)
+cartfit<-rpart(Credit.Rating ~Duration.z+Credit.Amount.z+Install_rate +
+                 Present.Resident+Age1.z++Num_Credits
+               +gcredit$Balance.in.Savings.A.C+Other.installment,data= gcredit, method = "class")
+print(cartfit)
+
+library(rpart.plot)
+rpart.plot(cartfit, main ="Classification Tree")
+
+
+pred = predict(cartfit, type="class")
+table(pred)
+prop.table(table(pred))
+
+#Misclassification error
+
+table1<-table(predicted = pred, actual =gcredit$Credit.Rating )
+table1
+sumtable<-addmargins(table1,FUN=sum)
+sumtable
+
+p<-predict(cartfit,gcredit)
+p
+prediction<-ifelse(p>0.5, 1,0)
+prediction
+head(prediction)
+

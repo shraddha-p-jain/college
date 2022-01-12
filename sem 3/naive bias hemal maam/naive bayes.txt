@@ -1,0 +1,39 @@
+1. Bayesian network ->
+#  classifiers, in general ,are functions that assigns a class label to instances described by a set of attributes.
+
+Bayesian classififiers are the statistical classifiers that are based on Bayes' Theorem.. They can predict class membership probabilities such as the probability that a given tuple belongs to a particular class.
+
+
+These Baysian Classifiers are represented by Baysian networks.
+
+# A Bayesian network (also known as a Bayes network or belief network) is a probabilistic graphical model that represents a set of variables and their conditional dependencies via a directed acyclic graph (DAG). 
+
+
+# A graphical model or probabilistic graphical model (PGM) is a mathematical model that has a set of statistical assumptions related to sample data, and  for which a graph expresses the conditional dependence structure between random variables.
+
+# The nodes represent variables -> These variables can be observed quantities, latent/inferred variables, or unknown parameters or hypothesis. A conditional probability table is used to represent each variable
+
+# Edges represent conditional dependencies
+
+# nodes that are not connected (no path connects one node to another) represent variables that are conditionally independent of each other.
+
+# Bayesian networks are ideal for taking an event that occurred and predicting the likelihood that any one of several possible known causes was the contributing factor. 
+# For example, a Bayesian network could represent the probabilistic relationships between diseases and symptoms. Given symptoms, the network can be used to compute the probabilities of the presence of various diseases.
+
+# Formula:::::::::::::::::::::::::::::::::
+P(X1,X2,X3...Xn) = product(from i=1 to i=n)p(Xi|Parents(Xi))
+
+
+
+# Naive Bayes Classfier: 
+The simplest case is the naive Bayesian classifier, which makes the independence assumption that the input features are conditionally independent of each other given the classification.
+
+# A baysian network that satisfies this assumption can be thought as when the target class is the only parent of all the input features, and that the target class itself has no parent.
+
+The independence of the naive Bayesian classifier is shown in a particular baysian network where the features are the nodes, the target variable (the classification) has no parents, and the classification is the only parent of each input feature.
+
+
+# Formulas -> we have already studied. 
+P(c|X) = P(x1|c)*P(x2|c)....*P(xn|c)*P(c)
+
+# In case of dependency between the perdictors, we can use different/modified algorithms like  tree-augumented naive bayes, or k- degenerate naive bayes
