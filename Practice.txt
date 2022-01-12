@@ -1,0 +1,88 @@
+
+Q1
+  Solution:  object abc {
+  def test(x: Int, y: Int, z: Int): Int = {
+       List(x, y, z).max
+    }
+     
+   def main(args: Array[String]): Unit = {
+      println("Result: " + test(1,2,3));
+    }
+  }
+
+Q2
+  Solution:  object Scala {
+    def reverse(newString: String): String = {
+        var revstring = ""
+        val n = newstring.length()
+        for(i <- 0 to n-1){
+            revstring = revstring.concat(newString.charAt(n-i-1).toString)
+        }
+    return revstring
+    }
+    def main(args: Array[String]) {
+        var newString = "ESE_Assiggnment"
+        println("Reverse of '" + newString + "' is '" + reverse(newString) + "'")
+    }
+}
+
+Q3
+  Solution: import java.util.Scanner;
+
+object ESE_Assignment {
+	
+	def main(args: Array[String]) {
+	
+		var scanner = new Scanner(System.in);
+	
+		println("Enter the integer n : ");
+	
+		var n = scanner.nextInt();
+		
+		println("The Result is : "+(n+nn+nnn));
+		
+	}
+}
+             
+Q5
+    Solution: 
+         val radius = 6
+         val volume = (4*22*radius*radius*radius)/3*7
+    println(f" Volume is $volume%.2f")
+
+Q7
+   Solution: ESE_assignment {
+    def main(args: Array[String]) {  
+        var a:Char=0;
+    
+        print("Enter character: ")  
+        a=scala.io.StdIn.readChar()
+        
+        ch match{
+            case 'A'=>printf("%c is a VOWEL.\n",a);
+            case 'E'=>printf("%c is a VOWEL.\n",a);
+            case 'I'=>printf("%c is a VOWEL.\n",a);
+            case 'O'=>printf("%c is a VOWEL.\n",a);
+            case 'U'=>printf("%c is a VOWEL.\n",a);
+            case 'a'=>printf("%c is a VOWEL.\n",a);
+            case 'e'=>printf("%c is a VOWEL.\n",a);
+            case 'i'=>printf("%c is a VOWEL.\n",a);
+            case 'o'=>printf("%c is a VOWEL.\n",a);
+            case 'u'=>printf("%c is a VOWEL.\n",a);
+            case _=>printf("%c is a CONSONANT.\n",a);
+        }  
+    }
+}  
+   
+Q9
+    Solution: import scala.math.pow
+                   object checkArmstrong(num: Int): Boolean = {
+                   val len = num.toString.length
+                    (for{
+                            digit <-num.toString.map(_.asDigit)
+                          }
+                          yield pow(digit,len).sum == num
+                        }
+                       }
+               
+         
